@@ -79,7 +79,7 @@ One step per source table. Cleans and standardises only; no joins, no business l
 | `stg_platform_partners` | Trim applied wherever relevant |
 | `stg_platform_fund_closes` | Trim applied wherever relevant |
 
-### Layer 2 — Intermediate
+### Layer 2: Intermediate
 Business logic only. Not intended to be queried directly by analysts.
 
 | Table | What it does |
@@ -87,7 +87,7 @@ Business logic only. Not intended to be queried directly by analysts.
 | `int_partner_label_normalised` | Maps 30+ spelling variants of partner names in `partner_label` to canonical names and partner_ids using LIKE pattern matching. Used as a fallback only, email matching is always preferred. |
 | `int_ticket_requester_resolved` | Core model. Classifies all 2,000 tickets by who raised them and resolves each to the appropriate platform entity. See Entity Resolution section below. |
 
-### Layer 3 — Marts
+### Layer 3: Marts
 Analyst-facing output. These are the tables to query.
 
 | Table | Grain | Answers |
@@ -110,7 +110,7 @@ Freshdesk and the platform share no common identifier. The only link between a t
 | `rm` | 760 | Email exactly matches `platform_relationship_managers.email` | rm_id, partner_id only |
 | `internal_staff` | 100 | @titanbay.com / @titanbay.co.uk domain, name does not match email | Nothing reliable, see below |
 | `personal_email_investor_match` | 80 | No email match, but name matches an investor | investor_id if name is unique |
-| `unresolved` | 0 | — | All 2,000 tickets classified |
+| `unresolved` | 0 | - | All 2,000 tickets classified |
 
 **Why RM tickets are not resolved to individual investors:**
 Each RM manages a median of 18 investors (max 35). Without knowing which specific investor the ticket is about, joining to all of the RM's investors would multiply rows and inflate every count. RM tickets are attributed to partner level only.
@@ -191,9 +191,9 @@ All three fixes require changes at the source (the Freshdesk ticket creation wor
 
 ## What I Would Build Next
 
-1. **`mart_partner_support_summary`** — the current model excludes 860 tickets (43% of the total) from investor-level analysis because they cannot be attributed to a specific investor, 760 RM tickets and 100 internal staff tickets. These are counted in the total workload figures in mart_ticket_volume_vs_closes but there is no dedicated model for analysing them at partner level. A mart_partner_support_summary with one row per partner would close this gap, giving the IS team a complete picture of workload by partner organisation rather than just the subset attributable to individual investors.
+1. **`mart_partner_support_summary`** the current model excludes 860 tickets (43% of the total) from investor-level analysis because they cannot be attributed to a specific investor, 760 RM tickets and 100 internal staff tickets. These are counted in the total workload figures in mart_ticket_volume_vs_closes but there is no dedicated model for analysing them at partner level. A mart_partner_support_summary with one row per partner would close this gap, giving the IS team a complete picture of workload by partner organisation rather than just the subset attributable to individual investors.
 
-**A more sophisticated pressure signal** — the current `is_pressure_month` flag in `mart_ticket_volume_vs_closes` looks at the problem from one angle: months where ticket volume is above average AND a close is scheduled. This is a reasonable starting point but misses two things. First, not all closes are equal; a £500M close affects far more investors than a £10M one, and the current flag treats them identically. Second, months with very high ticket volume but no close scheduled are not flagged at all, even if the IS team is clearly under strain.
+**A more sophisticated pressure signal** the current `is_pressure_month` flag in `mart_ticket_volume_vs_closes` looks at the problem from one angle: months where ticket volume is above average or a close is scheduled. This is a reasonable starting point but misses two things. First, not all closes are equal; a £500M close affects far more investors than a £10M one, and the current flag treats them identically. Second, months with very high ticket volume but no close scheduled are not flagged at all, even if the IS team is clearly under strain.
  
 A better approach would be a weighted `pressure_score` combining three signals, each normalised to a 0–1 scale so they can be compared fairly:
  
