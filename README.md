@@ -23,7 +23,7 @@ The Head of IS asked two specific questions. These can now be answered directly:
 |---|---|
 | Which investors raise the most tickets? | `mart_investor_support_summary` ORDER BY total_tickets DESC |
 | What patterns exist in their behaviour? | `mart_investor_support_summary` — priority breakdown, resolution times, recency |
-| When will the team be under more pressure than usual? | `mart_ticket_volume_vs_closes` months where total_tickets exceeds the average AND closes_in_month > 0 |
+| When will the team be under more pressure than usual? | `mart_ticket_volume_vs_closes` months where ticket volume is above average AND a close is scheduled |
 
 The data also makes the following questions answerable, which were not explicitly asked but are natural follow-ons the IS team may find useful:
 
@@ -34,7 +34,7 @@ The data also makes the following questions answerable, which were not explicitl
 | Does KYC status correlate with ticket volume? | `mart_investor_support_summary` GROUP BY kyc_status |
 | Do RM-managed investors raise fewer tickets? | `mart_investor_support_summary` GROUP BY is_rm_managed |
 | Which partner's close schedule carries the most capital? | `mart_ticket_volume_vs_closes` ORDER BY total_aum_closing_gbp DESC |
-| Do cancellations drive ticket spikes? | `mart_ticket_volume_vs_closes` — compare cancelled_closes vs total_tickets |
+| Do cancellations drive ticket spikes? | `mart_ticket_volume_vs_closes` compare cancelled_closes vs total_tickets |
 
 ---
 
@@ -192,3 +192,15 @@ All three fixes require changes at the source (the Freshdesk ticket creation wor
 ## What I Would Build Next
 
 1. **`mart_partner_support_summary`** — the current model excludes 860 tickets (43% of the total) from investor-level analysis because they cannot be attributed to a specific investor, 760 RM tickets and 100 internal staff tickets. These are counted in the total workload figures in mart_ticket_volume_vs_closes but there is no dedicated model for analysing them at partner level. A mart_partner_support_summary with one row per partner would close this gap, giving the IS team a complete picture of workload by partner organisation rather than just the subset attributable to individual investors.
+
+**A more sophisticated pressure signal** — the current `is_pressure_month` flag in `mart_ticket_volume_vs_closes` looks at the problem from one angle: months where ticket volume is above average AND a close is scheduled. This is a reasonable starting point but misses two things. First, not all closes are equal; a £500M close affects far more investors than a £10M one, and the current flag treats them identically. Second, months with very high ticket volume but no close scheduled are not flagged at all, even if the IS team is clearly under strain.
+ 
+A better approach would be a weighted `pressure_score` combining three signals, each normalised to a 0–1 scale so they can be compared fairly:
+ 
+| Signal | Suggested weight | Why |
+|---|---|---|
+| Ticket volume relative to monthly average | 0.4 | Directly measures IS team workload |
+| Upcoming closes scheduled | 0.3 | Forward-looking, close activity drives investor queries |
+| Total AUM closing that month | 0.3 | Larger closes affect more investors and carry more risk |
+ 
+Normalisation is essential before combining, without it, raw AUM values in the hundreds of millions completely overwhelm ticket counts regardless of the weights. The IS team can calibrate the weights based on their experience of what actually drives pressure.
