@@ -23,7 +23,7 @@ The Head of IS asked two specific questions. These can now be answered directly:
 |---|---|
 | Which investors raise the most tickets? | `mart_investor_support_summary` ORDER BY total_tickets DESC |
 | What patterns exist in their behaviour? | `mart_investor_support_summary` — priority breakdown, resolution times, recency |
-| When will the team be under more pressure than usual? | `mart_ticket_volume_vs_closes` months where ticket volume is above average AND a close is scheduled |
+| When will the team be under more pressure than usual? | `mart_ticket_volume_vs_closes` months where ticket volume is above average or a close is scheduled |
 
 The data also makes the following questions answerable, which were not explicitly asked but are natural follow-ons the IS team may find useful:
 
